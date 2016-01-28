@@ -15,7 +15,6 @@ body, body * {
     margin: 0;
     padding: 0;
     font-size: 16px;
-    font-weight: normal;
     box-sizing: border-box;
 }
 
@@ -37,7 +36,7 @@ h1 {
 .panel {
     background: #ecf0f1;
     border-radius: 0.25rem;
-    padding: 0.5rem;
+    padding: 0.25rem;
     width: 18rem;
     float: left;
     margin-right: 0.5rem;
@@ -52,8 +51,13 @@ h1 {
 }
 
 .panel h2 {
-    margin-bottom: 0.5rem;
-    font-weight: bold;
+    padding: 0.25rem;
+    margin-bottom: 0.25rem;
+    cursor: pointer;
+}
+
+.panel h2:hover {
+    background: rgba(255, 255, 0, 0.5);
 }
 
 ul, li {
@@ -68,28 +72,15 @@ ul, li {
 .item {
     background: #FFF;
     margin-bottom: 0.25rem;
-    display: flex;
 }
 
 .item p {
     padding: 0.5rem;
-    flex: 1;
 }
 
-.outLink {
-    color: white;
-    padding: 0 0.25rem;
-    border-radius: 0.25rem;
-}
-
-.item:hover .outLink {
-    border: 1px solid #bdc3c7;
-    color: #bdc3c7;
-}
-
-.item:hover .outLink:hover {
-    background: #bdc3c7;
-    color: #FFF;
+.item p:hover {
+    background: rgba(255, 255, 0, 0.25);
+    cursor: pointer;
 }
 
 .item .completed {

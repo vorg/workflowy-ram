@@ -58,12 +58,19 @@ var App = React.createClass({
     },
     onItemClick: function(e, child) {
         e.preventDefault();
+        e.stopPropagation();
         this.showItem(child);
         return false;
     },
     showItem: function(item) {
         localStorage.currentId = item.id;
         this.setState({ current: item })
+    },
+    onItemLinkClick: function(e, child) {
+        e.preventDefault();
+        e.stopPropagation();
+        document.location.href = 'https://workflowy.com/#/' + child.id;
+        return false;
     },
     render: function() {
         var rem = 16; //16px
@@ -96,13 +103,20 @@ var App = React.createClass({
                 if (child.ch) {
                     items = child.ch.map(function(item) {
                         return E('li', { className: 'item', key: item.id },
-                            E('p', null, E('a', { className: item.cp ? 'completed' : '', onClick: function(e) { self.onItemClick(e, item)}}, normalizeName(item.nm))),
-                            E('a', {className: 'outLink'}, '>')
+                            E('p', { onClick: function(e) { self.onItemClick(e, item)}},
+                                E('a', { className: item.cp ? 'completed' : '', onClick: function(e) { self.onItemLinkClick(e, item)}},
+                                    normalizeName(item.nm)
+                                )
+                            )
                         )
                     });
                 }
                 return E('div', { className: 'panel', key: child.id },
-                    E('h2', null, E('a', { onClick: function(e) { self.onItemClick(e, child)}}, normalizeName(child.nm))),
+                    E('h2', { onClick: function(e) { self.onItemClick(e, child)}},
+                        E('a', { onClick: function(e) { self.onItemLinkClick(e, child)}},
+                            normalizeName(child.nm)
+                        )
+                    ),
                     E('ul', { style: { maxHeight: Math.floor(window.innerHeight - 8 * rem) + 'px'}}, items)
                 )
             })

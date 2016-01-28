@@ -6,8 +6,20 @@ var fs      = require('fs');
 var app = express();
 app.use(express.static('public'));
 
+function readdirChronological(dir) {
+    return fs.readdirSync(dir)
+              .map(function(name) {
+                  return { name: name,
+                           time: fs.statSync(path.join(dir,name)).mtime.getTime()
+                         };
+               })
+               .sort(function(a, b) { return a.time - b.time; })
+               .map(function(file) { return file.name; });
+}
+
+
 function readLatestBackupFile() {
-    var fileName = '(marcin.ignac@gmail.com).2016-1-28.workflowy.backup';
+    var fileName = readdirChronological(config.WORKFLOWY_BACKUP_DIR).reverse()[0];
     var filePath = path.join(config.WORKFLOWY_BACKUP_DIR, fileName);
 
     return fs.readFileSync(filePath, 'utf8');
