@@ -1,11 +1,13 @@
+var E = React.createElement;
+
 function getText(url, callback) {
     var r = new XMLHttpRequest();
-    r.open("GET", url, true);
+    r.open('GET', url, true);
     r.onreadystatechange = function () {
         if (r.readyState != 4 || r.status != 200) return;
         callback(null, r.responseText);
     };
-    r.send("");
+    r.send('');
 }
 
 function getJSON(url, callback) {
@@ -25,12 +27,34 @@ function getJSON(url, callback) {
 var App = React.createClass({
     getInitialState: function() {
         return {
-            root: { ch: this.props.data, nm: "Workflowy" }
+            root: { ch: this.props.data, nm: 'Workflowy' }
         };
     },
     render: function() {
-        console.log(this.state.root)
-        return React.createElement("div", null, "Hello ", this.state.root.nm);
+        var rem = 16; //16px
+        var panelWidth = (18 + 0.5) * rem;
+        var root = this.state.root;
+        var panels = [];
+        if (root.ch) {
+            panels = root.ch.map(function(child) {
+                var items = [];
+                if (child.ch) {
+                    items = child.ch.map(function(child) {
+                        return E('li', { className: 'item' },
+                            E('p', null, child.nm)
+                        )
+                    });
+                }
+                return E('div', { className: 'panel' },
+                    E('h2', null, child.nm),
+                    E('ul', { style: { maxHeight: Math.floor(window.innerHeight - 8 * rem) + 'px'}}, items)
+                )
+            })
+        }
+        return E('div', { style: { width: (rem + panels.length * panelWidth) + 'px'}},
+            E('H1', null, 'Hello ', root.nm),
+            panels
+        );
     }
 });
 

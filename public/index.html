@@ -6,11 +6,61 @@
 <script src="lib/react-with-addons-0.14.6.js"></script>
 <script src="lib/react-dom-0.14.6.js"></script>
 <style type="text/css">
+
+html, body {
+    height: 100%;
+}
+
+body, body * {
+    margin: 0;
+    padding: 0;
+    font-size: 16px;
+    font-weight: normal;
+    box-sizing: border-box;
+}
+
 body {
-    background: #bdc3c7;
+    background: #1abc9c;
     font-family: "Andale Mono", Arial;
     letter-spacing: -0.5px;
+    padding: 1rem;
 }
+
+h1 {
+    margin-bottom: 1rem;
+}
+
+#container {
+}
+
+.panel {
+    background: #ecf0f1;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    width: 18rem;
+    float: left;
+    margin-right: 0.5rem;
+}
+
+.panel h2 {
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+ul, li {
+    list-style-type: none;
+}
+
+.panel ul {
+    overflow: scroll;
+}
+
+.item {
+    background: #FFF;
+    padding: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
 </style>
 </head>
 <body>
