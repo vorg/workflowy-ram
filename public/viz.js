@@ -96,7 +96,8 @@ var App = React.createClass({
                 if (child.ch) {
                     items = child.ch.map(function(item) {
                         return E('li', { className: 'item', key: item.id },
-                            E('p', null, E('a', { className: item.cp ? 'completed' : '', onClick: function(e) { self.onItemClick(e, item)}}, normalizeName(item.nm)))
+                            E('p', null, E('a', { className: item.cp ? 'completed' : '', onClick: function(e) { self.onItemClick(e, item)}}, normalizeName(item.nm))),
+                            E('a', {className: 'outLink'}, '>')
                         )
                     });
                 }
