@@ -211,7 +211,7 @@ var App = React.createClass({
                 var y = timelineHeight;
                 timelineHeight += h + margin
                 return E('rect', { key: 'timespan-'+i, fill: 'rgba(255, 200, 0, 1)', x: sx, y: y, width: ex - sx, height: h},
-                    E('title', {}, timespan[0].nm)
+                    E('title', {}, timespan[0].parent.nm + '\n' + timespan[0].nm)
                 )
             }))
 
@@ -225,12 +225,52 @@ var App = React.createClass({
                 var y = dueDatesHeight;
                 dueDatesHeight += h + margin
                 return E('rect', { key: 'due-'+i, fill: 'rgba(255, 50, 0, 1)', x: sx, y: y, width: ex - sx, height: h},
-                    E('title', {}, dueDate[0].nm)
+                    E('title', {}, dueDate[0].parent.nm + '\n' + dueDate[0].nm)
                 )
             }))
 
+            var dateTicks = []
+            var startWeek = moment(startDate).startOf('isoweek');
+            var endWeek = moment(endDate).startOf('isoweek').add(1, 'week');
+
+            while(startWeek.toDate().getTime() < endWeek.toDate().getTime()) {
+                dateTicks.push(startWeek.clone().toDate())
+                startWeek = startWeek.add(1, 'week');
+            }
+
             timelineHeight = Math.max(timelineHeight, dueDatesHeight)
             timelineHeight += 20 //bottom padding
+
+            timelineItems = timelineItems.concat(dateTicks.map(function(date, i) {
+                var x = remap(i, 0, dateTicks.length-1, 0, timelineWidth);
+                if (i == dateTicks.length - 1) {
+                    x = timelineWidth - 30;
+                }
+                var date = moment(date).format('Do')
+                return E('text', { x: x, y: timelineHeight - 10 }, date);
+            }));
+
+            var prevMonth = '';
+            timelineItems = timelineItems.concat(dateTicks.map(function(date, i) {
+                var x = remap(i, 0, dateTicks.length-1, 0, timelineWidth);
+                if (i == dateTicks.length - 1) {
+                    x = timelineWidth - 30;
+                }
+                var month = moment(date).format('MMM')
+                var label = '';
+                if (prevMonth != month) {
+                    label = month;
+                    prevMonth = month;
+                }
+                return E('text', { x: x, y: timelineHeight - 30 }, label);
+            }));
+
+            var nowX = remap(Date.now(), startDate, endDate, 0, timelineWidth);
+            timelineItems = timelineItems.concat([
+                E('line', { x1: nowX, y1: 0, x2: nowX, y2: timelineHeight - 30, stroke: 'rgba(255,255,255,0.5)'})
+            ])
+
+
 
             console.log(timelineItems)
 
