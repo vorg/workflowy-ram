@@ -98,7 +98,6 @@ var App = React.createClass({
     onItemLinkClick: function(e, child) {
         e.preventDefault();
         e.stopPropagation();
-        document.location.href = 'https://workflowy.com/#/' + child.id;
         return false;
     },
     render: function() {
@@ -271,7 +270,6 @@ var App = React.createClass({
             ])
 
 
-
             console.log(timelineItems)
 
             panels = current.ch.map(function(child) {
@@ -286,7 +284,7 @@ var App = React.createClass({
                         if (item.nm.indexOf('@due') != -1 && !item.cp) { itemStyle = { background: 'rgba(255, 100, 0, 0.5)' }}
                         return E('li', { className: 'item', key: item.id, style: itemStyle },
                             E('p', { onClick: function(e) { self.onItemClick(e, item)}},
-                                E('a', { className: item.cp ? 'completed' : '', onClick: function(e) { self.onItemLinkClick(e, item)}},
+                                E('a', { className: item.cp ? 'completed' : '', href: 'https://workflowy.com/#/' + item.id, onClick: this.onItemLinkClick},
                                     normalizeName(item.nm)
                                 )
                             )
@@ -295,7 +293,7 @@ var App = React.createClass({
                 }
                 return E('div', { className: 'panel', key: child.id },
                     E('h2', { onClick: function(e) { self.onItemClick(e, child)}},
-                        E('a', { onClick: function(e) { self.onItemLinkClick(e, child)}},
+                        E('a', { href: 'https://workflowy.com/#/' + child.id, onClick: this.onItemLinkClick },
                             normalizeName(child.nm)
                         )
                     ),
