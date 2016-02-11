@@ -95,9 +95,10 @@ var App = React.createClass({
         localStorage.currentId = item.id;
         this.setState({ current: item })
     },
-    onItemLinkClick: function(e, child) {
+    onItemLinkClick: function(e, item) {
         e.preventDefault();
         e.stopPropagation();
+        document.location.href = 'https://workflowy.com/#/' + item.id;
         return false;
     },
     render: function() {
@@ -312,7 +313,7 @@ var App = React.createClass({
                         if (item.nm.indexOf('@due') != -1 && !item.cp) { itemStyle = { background: 'rgba(255, 100, 0, 0.5)' }}
                         return E('li', { className: 'item', key: item.id, style: itemStyle },
                             E('p', { onClick: function(e) { self.onItemClick(e, item)}},
-                                E('a', { className: item.cp ? 'completed' : '', href: 'https://workflowy.com/#/' + item.id, onClick: this.onItemLinkClick},
+                                E('a', { className: item.cp ? 'completed' : '', href: 'https://workflowy.com/#/' + item.id, onClick: function(e) { return self.onItemLinkClick(e, item); }},
                                     normalizeName(item.nm)
                                 )
                             )
@@ -321,7 +322,7 @@ var App = React.createClass({
                 }
                 return E('div', { className: 'panel', key: child.id },
                     E('h2', { onClick: function(e) { self.onItemClick(e, child)}},
-                        E('a', { href: 'https://workflowy.com/#/' + child.id, onClick: this.onItemLinkClick },
+                        E('a', { onClick: function(e) { return self.onItemLinkClick(e, child); } },
                             normalizeName(child.nm)
                         )
                     ),
