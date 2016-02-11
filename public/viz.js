@@ -146,6 +146,18 @@ var App = React.createClass({
             return [item, start, end];
         }
 
+        function extractMaybe(item) {
+            var maybe = item.nm.match(/@maybe\(([^\)]+)\)/)[1];
+            if (!maybe) {
+                console.log('invalid @maybe', item.nm)
+                return null;
+            }
+            var dates = maybe.split('..');
+            var start = (dates[0].length == 10) ? moment(dates[0], 'YYYY-MM-DD').toDate() : moment(dates[0], 'YYMMDD').toDate()
+            var end = (dates[1].length == 10) ? moment(dates[1], 'YYYY-MM-DD').toDate() : moment(dates[1], 'YYMMDD').toDate()
+            return [item, start, end];
+        }
+
         function extractDue(item) {
             var dueStr = (item.nm.match(/@due\(([^\)]+)\)/) || [''])[1];
             var due = null;
@@ -190,6 +202,7 @@ var App = React.createClass({
             console.log('descendants', descendants.length)
 
             var timespans = descendants.filter(hasTag('@timespan')).map(extractTimespan).filter(notNull);
+            var maybes = descendants.filter(hasTag('@maybe')).map(extractMaybe).filter(notNull);
             var dueDates = descendants.filter(hasTag('@due')).map(extractDue).filter(notNull);
 
             var datesRange = []
@@ -200,12 +213,28 @@ var App = React.createClass({
             var startDate = datesRange.reduce(min, Date.now())
             var endDate = datesRange.reduce(max, Date.now())
 
+            var h = 12;
+
+            timelineItems = timelineItems.concat(maybes.map(function(maybe, i) {
+                var start = maybe[1].getTime()
+                var end = maybe[2].getTime()
+                var sx = remap(start, startDate, endDate, 0, timelineWidth)
+                var ex = remap(end, startDate, endDate, 0, timelineWidth)
+
+                var margin = 2
+                var y = timelineHeight;
+                timelineHeight += h + margin
+                return E('rect', { key: 'timespan-'+i, fill: 'rgba(255, 200, 0, 0.5)', x: sx, y: y, width: ex - sx, height: h},
+                    E('title', {}, maybe[0].parent.nm + '\n' + maybe[0].nm)
+                )
+            }))
+
             timelineItems = timelineItems.concat(timespans.map(function(timespan, i) {
                 var start = timespan[1].getTime()
                 var end = timespan[2].getTime()
                 var sx = remap(start, startDate, endDate, 0, timelineWidth)
                 var ex = remap(end, startDate, endDate, 0, timelineWidth)
-                var h = 20;
+
                 var margin = 2
                 var y = timelineHeight;
                 timelineHeight += h + margin
@@ -219,7 +248,6 @@ var App = React.createClass({
                 var start = dueDate[1].getTime()
                 var sx = remap(start, startDate, endDate, 0, timelineWidth)
                 var ex = sx + 10
-                var h = 20;
                 var margin = 2
                 var y = dueDatesHeight;
                 dueDatesHeight += h + margin
@@ -238,7 +266,7 @@ var App = React.createClass({
             }
 
             timelineHeight = Math.max(timelineHeight, dueDatesHeight)
-            timelineHeight += 20 //bottom padding
+            timelineHeight += 50 //bottom padding
 
             timelineItems = timelineItems.concat(dateTicks.map(function(date, i) {
                 var x = remap(i, 0, dateTicks.length-1, 0, timelineWidth);
