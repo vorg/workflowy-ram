@@ -113,8 +113,8 @@ var App = React.createClass({
 
         function normalizeName(str) {
             str = str.replace(/^[0-9]{6}/,'')
-            //str = str.replace(/#[^ ]+/g,'')
-            //str = str.replace(/@[^ ]+/g,'')
+            str = str.replace(/#[^ ]+/g,'')
+            str = str.replace(/@[^d][^ ]+/g,'')
             str = str.replace(/-/g, ' ')
 
             str = str.split(' ');
@@ -277,10 +277,13 @@ var App = React.createClass({
             panels = current.ch.map(function(child) {
                 var items = [];
                 if (child.ch) {
-                    items = child.ch.map(function(item) {
+                    items = child.ch.filter(function(item) {
+                        return item.cp === undefined;
+                    })
+                    items = items.map(function(item) {
                         var itemStyle = {};
                         if (item.nm.indexOf('@next') != -1) { itemStyle = { background: 'rgba(100, 200, 0, '+0.2+')' }}
-                        if (item.nm.indexOf('@due') != -1 && !item.cp) { itemStyle = { background: '#e74c3c' }}
+                        if (item.nm.indexOf('@due') != -1 && !item.cp) { itemStyle = { background: 'rgba(255, 100, 0, 0.5)' }}
                         return E('li', { className: 'item', key: item.id, style: itemStyle },
                             E('p', { onClick: function(e) { self.onItemClick(e, item)}},
                                 E('a', { className: item.cp ? 'completed' : '', onClick: function(e) { self.onItemLinkClick(e, item)}},
