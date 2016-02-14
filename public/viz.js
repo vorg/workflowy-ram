@@ -142,8 +142,38 @@ var App = React.createClass({
                 return null;
             }
             var dates = timespan.split('..');
-            var start = (dates[0].length == 10) ? moment(dates[0], 'YYYY-MM-DD').toDate() : moment(dates[0], 'YYMMDD').toDate()
-            var end = (dates[1].length == 10) ? moment(dates[1], 'YYYY-MM-DD').toDate() : moment(dates[1], 'YYMMDD').toDate()
+            var start = null;
+            if (dates[0].length == 10) {
+                start = moment(dates[0], 'YYYY-MM-DD').toDate();
+            }
+            else if (dates[0].length == 6) {
+                start = moment(dates[0], 'YYMMDD').toDate()
+            }
+            else if (dates[0].length == 7) {
+                start = moment(dates[0], 'YYYY-MM').toDate();
+            }
+            else {
+                start = new Date()
+            }
+            var end = null;
+            if (dates.length == 2) {
+                if (dates[1].length == 10) {
+                    end = moment(dates[1], 'YYYY-MM-DD').toDate();
+                }
+                else if (dates[1].length == 6) {
+                    end = moment(dates[1], 'YYMMDD').toDate()
+                }
+                else if (dates[1].length == 7) {
+                    end = moment(dates[1], 'YYYY-MM').endOf('month').toDate();
+                }
+                else {
+                    alert(dates[1])
+                }
+            }
+            else {
+                //if no end we treet project as one month
+                end = moment(start).endOf('month').toDate();
+            }
             return [item, start, end];
         }
 
