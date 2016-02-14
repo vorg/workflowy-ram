@@ -225,8 +225,11 @@ var App = React.createClass({
                 var margin = 2
                 var y = timelineHeight;
                 timelineHeight += h + margin
-                return E('rect', { key: 'timespan-'+i, fill: 'rgba(255, 200, 0, 0.5)', x: sx, y: y, width: ex - sx, height: h},
-                    E('title', {}, maybe[0].parent.nm + '\n' + maybe[0].nm)
+                return E('g', { key: 'maybe-'+i },
+                    E('rect', { fill: 'rgba(255, 200, 0, 0.5)', x: sx, y: y, width: ex - sx, height: h},
+                        E('title', {}, maybe[0].parent.nm + '\n' + maybe[0].nm)
+                    ),
+                    E('text', { x: Math.max(0, sx) + 2, y: y + 10, style: { fontSize: 10, fill: 'black' }}, (normalizeName(maybe[0].nm).join(' ') + '').toUpperCase())
                 )
             }))
 
@@ -239,8 +242,11 @@ var App = React.createClass({
                 var margin = 2
                 var y = timelineHeight;
                 timelineHeight += h + margin
-                return E('rect', { key: 'timespan-'+i, fill: 'rgba(255, 200, 0, 1)', x: sx, y: y, width: ex - sx, height: h},
-                    E('title', {}, timespan[0].parent.nm + '\n' + timespan[0].nm)
+                return E('g', { key: 'timespan-'+i },
+                    E('rect', { fill: '#f1c40f', x: sx, y: y, width: ex - sx, height: h},
+                        E('title', {}, timespan[0].parent.nm + '\n' + timespan[0].nm)
+                    ),
+                    E('text', { x: sx + 2, y: y + 10, style: { fontSize: 10, fill: 'black' }}, (normalizeName(timespan[0].nm).join(' ') + '').toUpperCase())
                 )
             }))
 
