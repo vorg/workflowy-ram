@@ -1,5 +1,134 @@
 var E = React.createElement;
 
+function handleClientLoad() {
+    console.log('GAPI Loaded');
+    gapi.client.setApiKey(Config.apiKey);
+    gapi.auth.authorize({client_id: Config.clientId, scope: Config.scopes, immediate: true}, handleAuthResult)
+}
+
+function handleAuthResult(authResult) {
+  console.log('handleAuthResult', authResult);
+  if (authResult && !authResult.error) {
+    loadCalendars();
+  }
+  else {
+    //immediate = false -> go to auth page
+    gapi.auth.authorize({client_id: Config.clientId, scope: Config.scopes, immediate: false}, handleAuthResult)
+  }
+}
+
+function loadCalendars() {
+    console.log('loadCalendars');
+	gapi.client.load('calendar', 'v3', function() {
+      var request = gapi.client.calendar.calendarList.list();
+      var calendarList = [];
+      request.execute(function(response) {
+        response.items.forEach(function(calendar) {
+          calendarList.push({
+            id: calendar.id,
+            name: calendar.summary
+          });
+        });
+        console.log('UserActions.updateCalendarList', calendarList);
+        calendarList.forEach(function(calendar) {
+            if (calendar.name == Config.calendarName) {
+                loadCalendarItems(calendar);
+            }
+        });
+      });
+    });
+}
+
+var State = {
+    app: null
+}
+
+/**
+ * Get the ISO week date week number
+ */
+Date.prototype.getWeek = function () {
+	// Create a copy of this date object
+	var target  = new Date(this.valueOf());
+
+	// ISO week date weeks start on monday
+	// so correct the day number
+	var dayNr   = (this.getDay() + 6) % 7;
+
+	// ISO 8601 states that week 1 is the week
+	// with the first thursday of that year.
+	// Set the target date to the thursday in the target week
+	target.setDate(target.getDate() - dayNr + 3);
+
+	// Store the millisecond value of the target date
+	var firstThursday = target.valueOf();
+
+	// Set the target to the first thursday of the year
+	// First set the target to january first
+	target.setMonth(0, 1);
+	// Not a thursday? Correct the date to the next thursday
+	if (target.getDay() != 4) {
+		target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
+	}
+
+	// The weeknumber is the number of weeks between the 
+	// first thursday of the year and the thursday in the target week
+	return 1 + Math.ceil((firstThursday - target) / 604800000); // 604800000 = 7 * 24 * 3600 * 1000
+}
+
+function loadCalendarItems(calendar) {
+  console.log('loadCalendarItems', calendar.name);
+  var start = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  var end = new Date();
+  var request = gapi.client.calendar.events.list({
+    timeMin: start.toISOString(),
+    timeMax: end.toISOString(),
+    calendarId: calendar.id
+  })
+
+  var thisWeek = end.getWeek();
+
+  request.execute(function(response) {
+    console.log(response);
+    var items = response.items;
+    var currentWeek = (new Date()).getWeek();
+    items.forEach(function(item) {
+        item.startDate = new Date(item.start.dateTime);
+        item.startTime = item.startDate.getTime();
+        item.startWeek = item.startDate.getWeek();
+        item.endDate = new Date(item.end.dateTime);
+        item.endTime = item.endDate.getTime();
+    })
+    items.sort(function(a, b) {
+        return a.startTime - b.startTime;
+    });
+    items = items.filter(function(item) {
+        return item.startWeek == currentWeek || item.startWeek == currentWeek - 1;
+    })
+
+    var prevWeek = {};
+    var thisWeek = {};
+    var weeks = [prevWeek, thisWeek];
+    items.forEach(function(item) {
+        var tokens = item.summary.trim().split(' ');
+        var valid = ["Sleep", "Var", "Vorg"].indexOf(tokens[0]) != -1;
+        if (!valid) return;
+        var projectName = tokens[0] + (tokens[1] ? ' ' + tokens[1] : '');
+        var weekIndex = (item.startWeek == currentWeek) ? 1 : 0;
+        var duration = (item.endTime - item.startTime) / (1000 * 60 * 60);
+        weeks[weekIndex][projectName] = (weeks[weekIndex][projectName] || 0) + duration;        
+    })
+    
+    weeks = weeks.map(function(week) {
+        return Object.keys(week).map(function(projectName) {
+            return { name: projectName, duration: week[projectName] }
+        }).sort(function(a, b) {
+            return a.duration - b.duration;
+        }).reverse();
+    });
+    State.app.setState({ weeksItems: weeks });
+  });
+}
+
 function getText(url, callback) {
     var r = new XMLHttpRequest();
     r.open('GET', url, true);
@@ -35,12 +164,6 @@ function subitems(item, list) {
         })
     }
     return list;
-}
-
-function prop(name) {
-    return function(o) {
-        return o[name];
-    }
 }
 
 function remap(val, oldmin, oldmax, newmin, newmax) {
@@ -97,6 +220,7 @@ function packRectangles(rectangles, rowHeight) {
 
 var App = React.createClass({
     getInitialState: function() {
+        State.app = this;
         console.log('init', this.props.data)
         var root = { ch: this.props.data, nm: 'Workflowy' }
 
@@ -122,7 +246,8 @@ var App = React.createClass({
 
         return {
             root: root,
-            current: current
+            current: current,
+            weeksItems: []
         };
     },
     onItemClick: function(e, child) {
@@ -279,9 +404,9 @@ var App = React.createClass({
             var dueDates = descendants.filter(hasTag('@due')).map(extractDue).filter(notNull);
 
             var datesRange = []
-                .concat(timespans.map(prop('1')))
-                .concat(timespans.map(prop('2')))
-                .concat(dueDates.map(prop('1')))
+                .concat(timespans.map(R.prop('1')))
+                .concat(timespans.map(R.prop('2')))
+                .concat(dueDates.map(R.prop('1')))
                 .map(dateToTime)
             var startDate = datesRange.reduce(min, Date.now())
             startDate = moment('2016-01-01').toDate(); //FIXME: hardcoded start date
@@ -455,6 +580,21 @@ var App = React.createClass({
                 )
             })
         }
+
+        var workload = E('div', { className: 'workload' },
+            this.state.weeksItems.map(function(week, index) {
+                var title = index ? 'This Week' : 'Prev Week';
+                return [
+                    E('h1', {}, title),
+                    E('ul', {},
+                      week.map(function(project) {
+                          return E('li', {}, E('span', { className: 'name'}, project.name), ' ', project.duration);
+                      })
+                    )
+                ]
+            })
+        );
+
         var parentStack = [];
         var parent = current;
         parentStack.unshift(parent);
@@ -468,6 +608,7 @@ var App = React.createClass({
                     return [index > 0 ? ' / ' : '', E('a', { onClick: function(e) { self.showItem(parent)}, key: 'parent-'+parent.id}, parent.nm)];
                 })),
             E('svg', { id:'timeline', width: timelineWidth, height: timelineHeight}, timelineItems),
+            workload,
             panels
         );
     }

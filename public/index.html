@@ -6,6 +6,8 @@
 <script src="lib/react-with-addons-0.14.6.js"></script>
 <script src="lib/react-dom-0.14.6.js"></script>
 <script src="lib/moment.js"></script>
+<script src="lib/ramda.min.js"></script>
+<script src="config.js"></script>
 <style type="text/css">
 
 html, body {
@@ -120,11 +122,40 @@ a:hover {
     cursor: pointer;
 }
 
+.workload {
+    margin-bottom: 1em;
+    max-width: 1200px;
+}
+
+.workload h1 {
+    margin: 0 0.5em 0.5em 0;
+    display: inline-block;
+    float: left;
+}
+
+.workload ul {
+    overflow: auto;
+}
+
+.workload li {
+    color: white;
+    float: left;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 0.3em;
+    padding: 0.2em;
+    margin: 0 0.5em 0.5em 0;
+}
+
+.workload span.name {
+    color: black;
+}
+
 </style>
 </head>
 <body>
 <div id="container">
 </div>
 <script src="viz.js"></script>
+<script src="https://apis.google.com/js/client.js?onload=handleClientLoad"></script>
 </body>
 </html>

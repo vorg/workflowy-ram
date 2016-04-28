@@ -10,5 +10,9 @@
   "license": "MIT",
   "dependencies": {
     "express": "^4.13.4"
+  },
+  "devDependencies": {
+    "standard": "^6.0.8",
+    "standard-format": "^2.1.1"
   }
 }
