@@ -55,6 +55,46 @@ function max(a, b) {
     return Math.max(a, b)
 }
 
+function packRectangles(rectangles, rowHeight) {
+    var rows = [];
+
+    //find top row y
+    var minY = rectangles.reduce(function(minY, rect) {
+        return Math.min(minY, rect.y)
+    }, Infinity)
+    console.log('minY', minY);
+
+    //sort by rectangle start
+    rectangles.sort(function(a, b) {
+        return a.x - b.x;
+    })
+
+    console.log('fitting')
+    rectangles.forEach(function(rect) {
+        for(var i=0; i<rows.length; i++) {
+            var row = rows[i];
+            var conflict = false
+            for(var j=0; j<row.length; j++) {
+                var otherRect = row[j];
+                if ((otherRect.x <= rect.x) && (otherRect.x + otherRect.width + rowHeight >= rect.x)) {
+                    conflict = true;
+                }
+            }
+            if (!conflict) {
+                rect.y = i * rowHeight;
+                row.push(rect);
+                return;
+            }
+        }
+        var row = [];
+        rect.y = rows.length * rowHeight;
+        row.push(rect)
+        rows.push(row)
+    })
+
+    return rows.length * rowHeight
+}
+
 var App = React.createClass({
     getInitialState: function() {
         console.log('init', this.props.data)
@@ -116,6 +156,8 @@ var App = React.createClass({
             str = str.replace(/#[^ ]+/g,'')
             str = str.replace(/@[^d][^ ]+/g,'')
             str = str.replace(/-/g, ' ')
+            str = str.replace(/<b>/ig,'')
+            str = str.replace(/<\/b>/ig,'')
 
             str = str.split(' ');
             str = str.map(function(s, i) {
@@ -242,54 +284,82 @@ var App = React.createClass({
                 .concat(dueDates.map(prop('1')))
                 .map(dateToTime)
             var startDate = datesRange.reduce(min, Date.now())
+            startDate = moment('2016-01-01').toDate(); //FIXME: hardcoded start date
             var endDate = datesRange.reduce(max, Date.now())
 
             var h = 12;
+            var margin = 2
 
-            timelineItems = timelineItems.concat(maybes.map(function(maybe, i) {
+            var rects = [];
+
+            rects = rects.concat(maybes.map(function(maybe, i) {
                 var start = maybe[1].getTime()
                 var end = maybe[2].getTime()
                 var sx = remap(start, startDate, endDate, 0, timelineWidth)
                 var ex = remap(end, startDate, endDate, 0, timelineWidth)
 
-                var margin = 2
                 var y = timelineHeight;
-                timelineHeight += h + margin
-                return E('g', { key: 'maybe-'+i },
-                    E('rect', { fill: 'rgba(255, 200, 0, 0.5)', x: sx, y: y, width: ex - sx, height: h},
-                        E('title', {}, maybe[0].parent.nm + '\n' + maybe[0].nm)
-                    ),
-                    E('text', { x: Math.max(0, sx) + 2, y: y + 10, style: { fontSize: 10, fill: 'black' }}, (normalizeName(maybe[0].nm).join(' ') + '').toUpperCase())
-                )
+                timelineHeight += h + margin;
+                return {
+                    x: sx,
+                    y: y,
+                    width: ex - sx,
+                    height: h,
+                    title: (normalizeName(maybe[0].nm).join(' ') + '').toUpperCase(),
+                    color: 'rgba(255, 200, 0, 0.5)'
+                }
             }))
 
-            timelineItems = timelineItems.concat(timespans.map(function(timespan, i) {
+            rects = rects.concat(timespans.map(function(timespan, i) {
                 var start = timespan[1].getTime()
                 var end = timespan[2].getTime()
                 var sx = remap(start, startDate, endDate, 0, timelineWidth)
                 var ex = remap(end, startDate, endDate, 0, timelineWidth)
 
-                var margin = 2
                 var y = timelineHeight;
                 timelineHeight += h + margin
-                return E('g', { key: 'timespan-'+i },
-                    E('rect', { fill: '#f1c40f', x: sx, y: y, width: ex - sx, height: h},
-                        E('title', {}, timespan[0].parent.nm + '\n' + timespan[0].nm)
-                    ),
-                    E('text', { x: sx + 2, y: y + 10, style: { fontSize: 10, fill: 'black' }}, (normalizeName(timespan[0].nm).join(' ') + '').toUpperCase())
-                )
+                return {
+                    x: sx,
+                    y: y,
+                    width: ex - sx,
+                    height: h,
+                    title: (normalizeName(timespan[0].nm).join(' ') + '').toUpperCase(),
+                    color: '#f1c40f'
+                }
             }))
 
             var dueDatesHeight = 0;
-            timelineItems = timelineItems.concat(dueDates.map(function(dueDate, i) {
+            rects = rects.concat(dueDates.map(function(dueDate, i) {
                 var start = dueDate[1].getTime()
                 var sx = remap(start, startDate, endDate, 0, timelineWidth)
                 var ex = sx + 10
-                var margin = 2
                 var y = dueDatesHeight;
                 dueDatesHeight += h + margin
-                return E('rect', { key: 'due-'+i, fill: 'rgba(255, 50, 0, 1)', x: sx, y: y, width: ex - sx, height: h},
-                    E('title', {}, dueDate[0].parent.nm + '\n' + dueDate[0].nm)
+                return {
+                    x: sx,
+                    y: y,
+                    width: ex - sx,
+                    height: h,
+                    title: (normalizeName(dueDate[0].parent ? dueDate[0].parent.nm : '').join(' ') + '\n' + (dueDate[0].nm)).toUpperCase(),
+                    color: 'rgba(255, 50, 0, 1)'
+                }
+            }))
+
+            timelineHeight = packRectangles(rects, h + margin)
+
+            timelineItems = timelineItems.concat(rects.map(function(rect, i) {
+                if (rect.width < 0) {
+                    console.log('ERROR: Rect has invalid width', rect)
+                    return null;
+                }
+                return E('g', { key: 'rect-'+i },
+                    E('rect', { fill: rect.color, x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+                        E('title', {}, rect.title)
+                    ),
+                    E('clipPath', { id: 'clip-path-' + i},
+                        E('rect', { fill: rect.color, x: rect.x, y: rect.y, width: rect.width, height: rect.height })
+                    ),
+                    E('text', { x: Math.max(0, rect.x) + 2, y: rect.y + 10, clipPath: 'url(#clip-path-'+i+')', style: { fontSize: 10, fill: 'black', pointerEvents: 'none' }}, rect.title)
                 )
             }))
 
@@ -297,21 +367,25 @@ var App = React.createClass({
             var startWeek = moment(startDate).startOf('isoweek');
             var endWeek = moment(endDate).startOf('isoweek').add(1, 'week');
 
+            var tickPeriod = 'week';
+            var tickStep = 1;
+            //tickStep = 'month'
+
             while(startWeek.toDate().getTime() < endWeek.toDate().getTime()) {
                 dateTicks.push(startWeek.clone().toDate())
-                startWeek = startWeek.add(1, 'week');
+                startWeek = startWeek.add(tickStep, tickPeriod);
             }
 
             timelineHeight = Math.max(timelineHeight, dueDatesHeight)
             timelineHeight += 50 //bottom padding
 
             timelineItems = timelineItems.concat(dateTicks.map(function(date, i) {
-                var x = remap(i, 0, dateTicks.length-1, 0, timelineWidth);
+                var x = remap(date.getTime(), startDate, endDate, 0, timelineWidth)
                 if (i == dateTicks.length - 1) {
                     x = timelineWidth - 30;
                 }
                 var date = moment(date).format('Do')
-                return E('text', { x: x, y: timelineHeight - 10 }, date);
+                return E('text', { x: x, y: timelineHeight - 10, key: 'date-tick-'  + i }, date);
             }));
 
             var prevMonth = '';
@@ -326,16 +400,30 @@ var App = React.createClass({
                     label = month;
                     prevMonth = month;
                 }
-                return E('text', { x: x, y: timelineHeight - 30 }, label);
+                return E('text', { x: x, y: timelineHeight - 30, key: 'month-' + i }, label);
+            }));
+
+            var prevYear = '';
+            timelineItems = timelineItems.concat(dateTicks.map(function(date, i) {
+                var x = remap(i, 0, dateTicks.length-1, 0, timelineWidth);
+                if (i == dateTicks.length - 1) {
+                    x = timelineWidth - 30;
+                }
+                var year = moment(date).format('YYYY')
+                var label = '';
+                if (prevYear != year) {
+                    label = year;
+                    prevYear = year;
+                }
+                return E('text', { x: x, y: timelineHeight - 50, key: 'year-' + i }, label);
             }));
 
             var nowX = remap(Date.now(), startDate, endDate, 0, timelineWidth);
             timelineItems = timelineItems.concat([
-                E('line', { x1: nowX, y1: 0, x2: nowX, y2: timelineHeight - 30, stroke: 'rgba(255,255,255,0.5)'})
+                E('line', { key: 'tick', x1: nowX, y1: 0, x2: nowX, y2: timelineHeight - 30, stroke: 'rgba(255,255,255,0.5)'})
             ])
 
-
-            console.log(timelineItems)
+            console.log('timelineItems', timelineItems)
 
             panels = current.ch.map(function(child) {
                 var items = [];
@@ -345,8 +433,9 @@ var App = React.createClass({
                     })
                     items = items.map(function(item) {
                         var itemStyle = {};
-                        if (item.nm.indexOf('@next') != -1) { itemStyle = { background: 'rgba(100, 200, 0, '+0.2+')' }}
-                        if (item.nm.indexOf('@due') != -1 && !item.cp) { itemStyle = { background: 'rgba(255, 100, 0, 0.5)' }}
+                        if (item.nm.indexOf('@next') != -1) { itemStyle.background = 'rgba(100, 200, 0, '+0.2+')'; }
+                        if (item.nm.indexOf('@due') != -1 && !item.cp) { itemStyle.background = 'rgba(255, 100, 0, 0.5)' }
+                        if (item.nm.indexOf('<b>') != -1 && !item.cp) { itemStyle.fontWeight = 'bold' }
                         return E('li', { className: 'item', key: item.id, style: itemStyle },
                             E('p', { onClick: function(e) { self.onItemClick(e, item)}},
                                 E('a', { className: item.cp ? 'completed' : '', href: 'https://workflowy.com/#/' + item.id, onClick: function(e) { return self.onItemLinkClick(e, item); }},
