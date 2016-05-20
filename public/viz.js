@@ -105,8 +105,8 @@ function loadCalendarItems(calendar) {
         return item.startWeek == currentWeek || item.startWeek == currentWeek - 1;
     })
 
-    var prevWeek = {};
-    var thisWeek = {};
+    var prevWeek = { 'Var Total (d)' : 0, 'Vorg Total (d)' : 0 };
+    var thisWeek = { 'Var Total (d)' : 0, 'Vorg Total (d)' : 0 };
     var weeks = [prevWeek, thisWeek];
     items.forEach(function(item) {
         var tokens = item.summary.trim().split(' ');
@@ -116,12 +116,30 @@ function loadCalendarItems(calendar) {
         var weekIndex = (item.startWeek == currentWeek) ? 1 : 0;
         var duration = (item.endTime - item.startTime) / (1000 * 60 * 60);
         weeks[weekIndex][projectName] = (weeks[weekIndex][projectName] || 0) + duration;        
+        if (tokens[0] == 'Var') {
+            weeks[weekIndex]['Var Total (d)'] = Math.floor(((weeks[weekIndex]['Var Total (d)'] || 0) + duration/8)*10)/10;        
+        }
+        if (tokens[0] == 'Vorg') {
+            weeks[weekIndex]['Vorg Total (d)'] = Math.floor(((weeks[weekIndex]['Vorg Total (d)'] || 0) + duration/8)*10)/10;        
+        }
+        if (tokens[0] == "Sleep") {
+            weeks[weekIndex]["Sleep/d"] = (weeks[weekIndex]["Sleep/d"] || 0) + 1;
+        }
     })
+
+    weeks[0]["Sleep/d"] = weeks[0]["Sleep"] / weeks[0]["Sleep/d"];
+    weeks[1]["Sleep/d"] = weeks[1]["Sleep"] / weeks[1]["Sleep/d"];
+    delete weeks[0]["Sleep"];
+    delete weeks[1]["Sleep"];
     
     weeks = weeks.map(function(week) {
         return Object.keys(week).map(function(projectName) {
             return { name: projectName, duration: week[projectName] }
         }).sort(function(a, b) {
+            if (a.name.indexOf('/d') != -1) return 1;
+            if (b.name.indexOf('/d') != -1) return -1;
+            if (a.name.indexOf('(d)') != -1) return 1;
+            if (b.name.indexOf('(d)') != -1) return -1;
             return a.duration - b.duration;
         }).reverse();
     });
