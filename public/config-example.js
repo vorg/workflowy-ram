@@ -1,5 +1,7 @@
-module.exports = {
-  WORKFLOWY_BACKUP_DIR: '',
-  WORKFLOWY_PUBLISH_ID: '',
-  WORKFLOWY_PUBLISH_DIR: ''
+var Config = {
+  scopes: '',
+  clientId: '',
+  secret: '',
+  apiKey: '',
+  calendarName: ''
 }
