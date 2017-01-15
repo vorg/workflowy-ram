@@ -1,5 +1,5 @@
-var Config = {
-    scopes: '',
-    clientId: '',
-    apiKey: ''
+module.exports = {
+  WORKFLOWY_BACKUP_DIR: '',
+  WORKFLOWY_PUBLISH_ID: '',
+  WORKFLOWY_PUBLISH_DIR: ''
 }
