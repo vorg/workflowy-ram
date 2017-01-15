@@ -70,7 +70,7 @@ Date.prototype.getWeek = function () {
 		target.setMonth(0, 1 + ((4 - target.getDay()) + 7) % 7);
 	}
 
-	// The weeknumber is the number of weeks between the 
+	// The weeknumber is the number of weeks between the
 	// first thursday of the year and the thursday in the target week
 	return 1 + Math.ceil((firstThursday - target) / 604800000); // 604800000 = 7 * 24 * 3600 * 1000
 }
@@ -115,23 +115,27 @@ function loadCalendarItems(calendar) {
         var projectName = tokens[0] + (tokens[1] ? ' ' + tokens[1] : '');
         var weekIndex = (item.startWeek == currentWeek) ? 1 : 0;
         var duration = (item.endTime - item.startTime) / (1000 * 60 * 60);
-        weeks[weekIndex][projectName] = (weeks[weekIndex][projectName] || 0) + duration;        
+        weeks[weekIndex][projectName] = (weeks[weekIndex][projectName] || 0) + duration;
         if (tokens[0] == 'Var') {
-            weeks[weekIndex]['Var Total (d)'] = Math.floor(((weeks[weekIndex]['Var Total (d)'] || 0) + duration/8)*10)/10;        
+            weeks[weekIndex]['Var Total (d)'] = Math.floor(((weeks[weekIndex]['Var Total (d)'] || 0) + duration/8)*10)/10;
         }
         if (tokens[0] == 'Vorg') {
-            weeks[weekIndex]['Vorg Total (d)'] = Math.floor(((weeks[weekIndex]['Vorg Total (d)'] || 0) + duration/8)*10)/10;        
+            weeks[weekIndex]['Vorg Total (d)'] = Math.floor(((weeks[weekIndex]['Vorg Total (d)'] || 0) + duration/8)*10)/10;
         }
         if (tokens[0] == "Sleep") {
-            weeks[weekIndex]["Sleep/d"] = (weeks[weekIndex]["Sleep/d"] || 0) + 1;
+            if (!weeks[weekIndex]["Sleep/d"]) {
+              weeks[weekIndex]["Sleep/d"] = {}
+            }
+            var date = moment(item.startTime).format('YYYY-MM-DD')
+            weeks[weekIndex]["Sleep/d"][date] = true
         }
     })
 
-    weeks[0]["Sleep/d"] = weeks[0]["Sleep"] / weeks[0]["Sleep/d"];
-    weeks[1]["Sleep/d"] = weeks[1]["Sleep"] / weeks[1]["Sleep/d"];
+    weeks[0]["Sleep/d"] = weeks[0]["Sleep"] / Object.keys(weeks[0]["Sleep/d"]).length
+    weeks[1]["Sleep/d"] = Math.floor(weeks[1]["Sleep"] / Object.keys(weeks[1]["Sleep/d"]).length * 10) / 10
     delete weeks[0]["Sleep"];
     delete weeks[1]["Sleep"];
-    
+
     weeks = weeks.map(function(week) {
         return Object.keys(week).map(function(projectName) {
             return { name: projectName, duration: week[projectName] }
@@ -321,7 +325,8 @@ var App = React.createClass({
         }
 
         function extractTimespan(item) {
-            var timespan = item.nm.match(/@timespan\(([^\)]+)\)/)[1];
+            var matches = item.nm.match(/@timespan\(([^\)]+)\)/)
+            var timespan = matches ? matches[1] : null;
             if (!timespan) {
                 console.log('invalid @timespan', item.nm)
                 return null;
@@ -352,7 +357,7 @@ var App = React.createClass({
                     end = moment(dates[1], 'YYYY-MM').endOf('month').toDate();
                 }
                 else {
-                    alert(dates[1])
+                    //alert(dates[1])
                 }
             }
             else {
@@ -364,7 +369,7 @@ var App = React.createClass({
 
         function extractMaybe(item) {
             var maybe = item.nm.match(/@maybe\(([^\)]+)\)/)[1];
-            if (!maybe) {
+            if (!maybe || (maybe.indexOf('..') === -1)) {
                 console.log('invalid @maybe', item.nm)
                 return null;
             }
@@ -420,6 +425,8 @@ var App = React.createClass({
             var timespans = descendants.filter(hasTag('@timespan')).map(extractTimespan).filter(notNull);
             var maybes = descendants.filter(hasTag('@maybe')).map(extractMaybe).filter(notNull);
             var dueDates = descendants.filter(hasTag('@due')).map(extractDue).filter(notNull);
+
+            console.log('timespans', timespans)
 
             var datesRange = []
                 .concat(timespans.map(R.prop('1')))
